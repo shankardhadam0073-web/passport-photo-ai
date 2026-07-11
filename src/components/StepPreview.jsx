@@ -46,6 +46,11 @@ const StepPreview = memo(() => {
   const [exportType, setExportType] = useState(''); // 'png' | 'pdf' | 'session'
   const [hasSaved, setHasSaved] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 }); // offset in mm
+  
+  // Drag and drop state
+  const [customPositions, setCustomPositions] = useState({}); // { [uniqueId]: { x: mm, y: mm } }
+  const [dragState, setDragState] = useState({ id: null, startX: 0, startY: 0, initX: 0, initY: 0 });
+  const sheetScaleRef = useRef(null);
   const sheetRef = useRef(null);
   const hiddenSheetsRef = useRef([]); // To hold refs to all sheets for session export
   const { addToast } = useToast();
@@ -120,32 +125,45 @@ const StepPreview = memo(() => {
     const gridWMm = cols * photoW + (cols - 1) * gapMm;
     const gridHMm = activeRows * photoH + (activeRows - 1) * gapMm;
     
-    const centerX = (paper.w / 2) + offset.x;
-    const centerY = (paper.h / 2) + offset.y;
-    
-    const startXMm = centerX - (gridWMm / 2);
-    const startYMm = centerY - (gridHMm / 2);
-    
-    let currentImgIdx = 0;
+
     
     const cutLineWidth = Math.max(1, Math.round(1 * (DPI / 96))); 
     const borderLineWidth = Math.max(1, Math.round(1 * (DPI / 96))); 
     const cutOffsetPx = 1.5 * pxPerMm;
     
-    for (let r = 0; r < activeRows; r++) {
-      for (let c = 0; c < cols; c++) {
-        if (currentImgIdx >= flattenedImages.length) break;
+    const printableW = paper.w - (2 * paper.pad);
+    const printableH = paper.h - (2 * paper.pad);
+    const startXMm = (printableW - gridWMm) / 2;
+    const startYMm = (printableH - gridHMm) / 2;
+
+    for (let i = 0; i < flattenedImages.length; i++) {
+        const imgData = flattenedImages[i];
+        const uniqueId = `sheet-${imgData.id}-${i}`;
+        const htmlImage = loadedImages[imgData.id];
         
-        const xMm = startXMm + c * (photoW + gapMm);
-        const yMm = startYMm + r * (photoH + gapMm);
+        let xMm = 0;
+        let yMm = 0;
         
-        const xPx = Math.round(xMm * pxPerMm);
-        const yPx = Math.round(yMm * pxPerMm);
+        if (customPositions[uniqueId]) {
+          xMm = customPositions[uniqueId].x;
+          yMm = customPositions[uniqueId].y;
+        } else {
+          const r = Math.floor(i / cols);
+          const c = i % cols;
+          xMm = startXMm + c * (photoW + gapMm);
+          yMm = startYMm + r * (photoH + gapMm);
+        }
+        
+        // Convert to paper coordinates by adding padding and global offset
+        const finalXMm = xMm + paper.pad + offset.x;
+        const finalYMm = yMm + paper.pad + offset.y;
+        
+        const xPx = Math.round(finalXMm * pxPerMm);
+        const yPx = Math.round(finalYMm * pxPerMm);
         const wPx = Math.round(photoW * pxPerMm);
         const hPx = Math.round(photoH * pxPerMm);
         
-        const imgData = flattenedImages[currentImgIdx];
-        const htmlImage = loadedImages[imgData.id];
+
         
         if (htmlImage) {
           ctx.fillStyle = '#f1f5f9';
@@ -200,9 +218,6 @@ const StepPreview = memo(() => {
           ctx.strokeRect(xPx - cutOffsetPx, yPx - cutOffsetPx, wPx + 2 * cutOffsetPx, hPx + 2 * cutOffsetPx);
           ctx.setLineDash([]);
         }
-        
-        currentImgIdx++;
-      }
     }
     
     const fontSizePx = Math.round(8 * (DPI / 96));
@@ -454,21 +469,72 @@ const StepPreview = memo(() => {
     }));
   }, [minX, maxX, minY, maxY]);
 
-  const renderPhoto = (imgSrc, key, rotate = false) => (
-    <div
-      key={key}
-      style={{ 
-        width: rotate ? currentPhoto.height : currentPhoto.width, 
-        height: rotate ? currentPhoto.width : currentPhoto.height,
-        position: 'relative',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-        ...(includePhotoBorder ? { border: '1px solid #cbd5e1' } : {})
-      }}
-      className={`transition-all duration-300`}
-    >
+  // Reset custom dragged positions when layout changes significantly
+  useEffect(() => {
+    setCustomPositions({});
+  }, [sheetSize.id, passportSize.id, images.length, copies, activeIdx]);
+
+  const handlePointerDown = (e, uniqueId, currentXMm, currentYMm) => {
+    e.preventDefault();
+    e.target.setPointerCapture(e.pointerId);
+    setDragState({
+      id: uniqueId,
+      startX: e.clientX,
+      startY: e.clientY,
+      initX: currentXMm,
+      initY: currentYMm
+    });
+  };
+
+  const handlePointerMove = (e) => {
+    if (dragState.id) {
+      const container = sheetScaleRef.current;
+      const scale = container ? container.getBoundingClientRect().width / container.offsetWidth : 1;
+      const pxToMm = (25.4 / 96) / scale;
+      
+      const dx = (e.clientX - dragState.startX) * pxToMm;
+      const dy = (e.clientY - dragState.startY) * pxToMm;
+      
+      setCustomPositions(prev => ({
+        ...prev,
+        [dragState.id]: {
+          x: dragState.initX + dx,
+          y: dragState.initY + dy
+        }
+      }));
+    }
+  };
+
+  const handlePointerUp = (e) => {
+    if (dragState.id) {
+      try { e.target.releasePointerCapture(e.pointerId); } catch(err) {}
+      setDragState({ id: null, startX: 0, startY: 0, initX: 0, initY: 0 });
+    }
+  };
+
+  const renderPhoto = (imgSrc, key, rotate, xMm, yMm) => {
+    const isDraggingThis = dragState.id === key;
+    return (
+      <div
+        key={key}
+        onPointerDown={(e) => handlePointerDown(e, key, xMm, yMm)}
+        style={{ 
+          position: 'absolute',
+          left: `${xMm}mm`,
+          top: `${yMm}mm`,
+          width: rotate ? currentPhoto.height : currentPhoto.width, 
+          height: rotate ? currentPhoto.width : currentPhoto.height,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          cursor: isDraggingThis ? 'grabbing' : 'grab',
+          zIndex: isDraggingThis ? 50 : 10,
+          boxShadow: isDraggingThis ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3)' : 'none',
+          ...(includePhotoBorder ? { border: '1px solid #cbd5e1' } : {})
+        }}
+        className={`transition-shadow duration-200 touch-none`}
+      >
       {includeCutLines && (
         <div style={{ position: 'absolute', top: '-6px', left: '-6px', right: '-6px', bottom: '-6px', border: '1px dashed rgba(203, 213, 225, 0.6)', pointerEvents: 'none' }} />
       )}
@@ -477,8 +543,8 @@ const StepPreview = memo(() => {
           src={imgSrc} 
           alt="Passport Cutout" 
           style={rotate ? {
-            width: currentPhoto.height,
-            height: currentPhoto.width,
+            width: currentPhoto.width,
+            height: currentPhoto.height,
             transform: 'rotate(90deg)',
             transformOrigin: 'center',
             objectFit: 'cover'
@@ -492,7 +558,8 @@ const StepPreview = memo(() => {
         <div style={{ backgroundColor: '#f1f5f9', color: '#94a3b8', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '500' }}>No Image</div>
       )}
     </div>
-  );
+    );
+  };
 
   const renderSheetContent = (imagesToRender) => {
     // Scale gap automatically based on paper size
@@ -504,24 +571,43 @@ const StepPreview = memo(() => {
       for (let i = 0; i < copies; i++) flattenedImages.push(img);
     }
 
+    const startXMm = (printableW - gridW) / 2;
+    const startYMm = (printableH - gridH) / 2;
+
     return (
-      <div className="w-full h-full flex items-center justify-center box-border">
+      <div 
+        className="w-full h-full relative box-border overflow-hidden"
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+        ref={sheetScaleRef}
+      >
         <div 
           style={{ 
-            display: 'grid',
-            gridTemplateColumns: `repeat(${cols}, ${rotatePhoto ? currentPhoto.height : currentPhoto.width})`,
-            justifyContent: 'center',
-            alignContent: 'center',
-            gap: gapSize,
+            position: 'absolute',
+            left: 0,
+            top: 0,
             width: '100%',
             height: '100%',
             transform: `translate(${offset.x}mm, ${offset.y}mm)`,
-            transition: 'transform 0.15s ease-out'
+            transition: dragState.id ? 'none' : 'transform 0.15s ease-out'
           }}
         >
-          {flattenedImages.map((img, idx) => 
-            renderPhoto(img.croppedPreview, `sheet-${img.id}-${idx}`, rotatePhoto)
-          )}
+          {flattenedImages.map((img, idx) => {
+            const uniqueId = `sheet-${img.id}-${idx}`;
+            let xMm = 0;
+            let yMm = 0;
+            if (customPositions[uniqueId]) {
+              xMm = customPositions[uniqueId].x;
+              yMm = customPositions[uniqueId].y;
+            } else {
+              const r = Math.floor(idx / cols);
+              const c = idx % cols;
+              xMm = startXMm + c * (photoW + gapMm);
+              yMm = startYMm + r * (photoH + gapMm);
+            }
+            return renderPhoto(img.croppedPreview, uniqueId, rotatePhoto, xMm, yMm);
+          })}
         </div>
       </div>
     );
@@ -582,13 +668,13 @@ const StepPreview = memo(() => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* Left Side: Interactive Preview Canvas */}
-        <div className="lg:col-span-7 flex flex-col items-center gap-6 no-print">
-          <h3 className="text-lg font-bold font-display text-white self-start">
+        <div className="lg:col-span-7 flex flex-col items-center gap-6 print:block print:w-full">
+          <h3 className="text-lg font-bold font-display text-white self-start no-print">
             Print Sheet Preview ({activeIdx === 'combined' ? 'All Photos Combined' : `Photo #${activeIdx + 1}`})
           </h3>
           
-          <div className="w-full overflow-x-auto flex justify-center py-6 bg-slate-950/40 rounded-2xl border border-slate-800/80 relative">
-            <div className="origin-top scale-[0.6] sm:scale-[0.8] lg:scale-[0.7] xl:scale-[0.8] my-4 shadow-2xl">
+          <div className="w-full overflow-x-auto flex justify-center py-6 bg-slate-950/40 rounded-2xl border border-slate-800/80 relative print:bg-white print:border-none print:py-0 print:overflow-visible">
+            <div className="origin-top scale-[0.6] sm:scale-[0.8] lg:scale-[0.7] xl:scale-[0.8] my-4 shadow-2xl print:scale-100 print:my-0 print:shadow-none print:origin-top-left">
               
               <div
                 style={{
@@ -596,9 +682,9 @@ const StepPreview = memo(() => {
                   height: currentSheet.height,
                   padding: currentSheet.padding,
                 }}
-                className="relative flex flex-col justify-center items-center box-border select-none"
+                className="relative box-border select-none bg-white"
               >
-                <div style={{ 
+                <div className="no-print" style={{ 
                   color: '#94a3b8', borderBottom: '1px solid #f1f5f9',
                   position: 'absolute', top: '12px', left: '16px', right: '16px',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -610,7 +696,7 @@ const StepPreview = memo(() => {
 
                 {renderSheetContent(activeImagesArray)}
 
-                <div style={{ 
+                <div className="no-print" style={{ 
                   color: '#94a3b8', borderTop: '1px solid #f1f5f9',
                   position: 'absolute', bottom: '12px', left: '16px', right: '16px',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',

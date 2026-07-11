@@ -208,8 +208,30 @@ export function segmentBackground(imageUrl) {
             const ctx = canvas.getContext('2d');
             const imageData = ctx.createImageData(img.width, img.height);
             
+            // Check the four corners to determine the background value
+            const corners = [
+              mask[0], // Top-Left
+              mask[img.width - 1], // Top-Right
+              mask[(img.height - 1) * img.width], // Bottom-Left
+              mask[(img.height - 1) * img.width + img.width - 1] // Bottom-Right
+            ];
+            
+            // The most frequent value in the corners is almost certainly the background
+            const counts = {};
+            let bgValue = 0;
+            let maxCount = 0;
+            for (const val of corners) {
+              counts[val] = (counts[val] || 0) + 1;
+              if (counts[val] > maxCount) {
+                maxCount = counts[val];
+                bgValue = val;
+              }
+            }
+
             for (let i = 0; i < mask.length; ++i) {
-              const val = mask[i] > 0 ? 255 : 0;
+              // If the pixel is NOT the background value, it is the person.
+              // Make person opaque (255) and background transparent (0).
+              const val = mask[i] !== bgValue ? 255 : 0;
               const offset = i * 4;
               imageData.data[offset] = 0;
               imageData.data[offset + 1] = 0;
