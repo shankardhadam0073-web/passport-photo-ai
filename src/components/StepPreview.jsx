@@ -638,38 +638,7 @@ const StepPreview = memo(() => {
         </div>
       )}
 
-      {/* Tabs if 2 images uploaded */}
-      {images.length > 1 && (
-        <div className="flex justify-center mb-6 no-print">
-          <div className="inline-flex p-1 bg-slate-900/60 rounded-xl border border-slate-800">
-            {images.map((img, idx) => (
-              <button
-                key={img.id}
-                onClick={() => setActiveIdx(idx)}
-                className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                  activeIdx === idx
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/10'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <FileImage className="w-4 h-4" />
-                Photo #{idx + 1} Sheet
-              </button>
-            ))}
-            <button
-              onClick={() => setActiveIdx('combined')}
-              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                activeIdx === 'combined'
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/10'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <LayoutGrid className="w-4 h-4" />
-              Combined Sheet
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Tabs removed as per requirement */}
 
       {/* Main Grid container */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -759,217 +728,16 @@ const StepPreview = memo(() => {
           </Card>
 
           <Card className="flex flex-col gap-6">
-            {/* Paper Size Selector */}
-            <div>
-              <label className="text-slate-355 text-xs font-bold tracking-wider uppercase mb-3 block flex items-center gap-2">
-                <LayoutGrid className="w-4 h-4 text-blue-400" />
-                Select Paper Sheet Layout
-              </label>
-              <div className="flex flex-col gap-2">
-                {Object.values(SHEET_SIZES).map((size) => (
-                  <button
-                    key={size.id}
-                    onClick={() => setSheetSize(size)}
-                    className={`flex items-center justify-between p-3.5 rounded-xl border transition-all duration-300 text-left ${
-                      sheetSize.id === size.id
-                        ? 'border-blue-500 bg-blue-600/10 text-white'
-                        : 'border-slate-800 bg-slate-900/30 text-slate-400 hover:border-slate-700 hover:text-slate-200 cursor-pointer'
-                    }`}
-                  >
-                    <div>
-                      <span className="text-sm font-semibold block">{size.name}</span>
-                      <span className="text-[11px] text-slate-500 mt-0.5 block">
-                        Units: {size.displayWidth} x {size.displayHeight} {size.unit}
-                      </span>
-                    </div>
-                    {sheetSize.id === size.id && <Check className="w-4 h-4 text-blue-400" />}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Copies Selector */}
-            <div className="border-t border-slate-800 pt-5">
-              <label className="text-slate-355 text-xs font-bold tracking-wider uppercase mb-3 flex items-center justify-between gap-2">
-                <span className="flex items-center gap-2"><Copy className="w-4 h-4 text-blue-400" /> Number of Copies</span>
-                <span className="text-slate-500 font-mono">Max: {maxCopies}</span>
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {[2, 4, 6, 8, 12, 16].map((num) => {
-                  const isDisabled = num > maxCopies;
-                  return (
-                    <button
-                      key={num}
-                      onClick={() => setCopies(num)}
-                      disabled={isDisabled}
-                      className={`p-2.5 rounded-xl border transition-all text-sm font-semibold ${
-                        isDisabled
-                          ? 'border-slate-800 bg-slate-900/10 text-slate-700 cursor-not-allowed'
-                          : copies === num
-                          ? 'border-blue-500 bg-blue-600/10 text-white'
-                          : 'border-slate-800 bg-slate-900/30 text-slate-400 hover:border-slate-700 hover:text-slate-200'
-                      }`}
-                    >
-                      {num}
-                    </button>
-                  );
-                })}
-                {/* Max Fill Button */}
-                {![2, 4, 6, 8, 12, 16].includes(maxCopies) && maxCopies > 0 && (
-                  <button
-                    onClick={() => setCopies(maxCopies)}
-                    className={`col-span-3 p-2.5 rounded-xl border transition-all text-sm font-semibold flex items-center justify-center gap-2 ${
-                      copies === maxCopies
-                        ? 'border-blue-500 bg-blue-600/10 text-white'
-                        : 'border-slate-800 bg-slate-900/30 text-slate-400 hover:border-slate-700 hover:text-slate-200'
-                    }`}
-                  >
-                    <LayoutGrid className="w-4 h-4" />
-                    Fill Page ({maxCopies})
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Print Sheet Offset Controls */}
-            <div className="border-t border-slate-800 pt-5">
-              <label className="text-slate-355 text-xs font-bold tracking-wider uppercase mb-3 flex items-center justify-between gap-2">
-                <span className="flex items-center gap-2">
-                  <Move className="w-4 h-4 text-blue-400" /> Print Sheet Offset
-                </span>
-                <span className="text-slate-500 font-mono">
-                  X: {offset.x > 0 ? `+${offset.x}` : offset.x} mm, Y: {offset.y > 0 ? `+${offset.y}` : offset.y} mm
-                </span>
-              </label>
-              
-              <div className="flex flex-col items-center gap-3">
-                <div className="grid grid-cols-3 gap-2 w-full max-w-[240px]">
-                  {/* Row 1 */}
-                  <div></div>
-                  <button
-                    onClick={() => setOffset(prev => ({ ...prev, y: Math.max(minY, prev.y - 2) }))}
-                    disabled={offset.y <= minY}
-                    className="p-3 rounded-xl border border-slate-800 bg-slate-900/30 text-slate-400 hover:border-slate-700 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer"
-                    title="Move Up"
-                  >
-                    ▲
-                  </button>
-                  <div></div>
-
-                  {/* Row 2 */}
-                  <button
-                    onClick={() => setOffset(prev => ({ ...prev, x: Math.max(minX, prev.x - 2) }))}
-                    disabled={offset.x <= minX}
-                    className="p-3 rounded-xl border border-slate-800 bg-slate-900/30 text-slate-400 hover:border-slate-700 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer"
-                    title="Move Left"
-                  >
-                    ◀
-                  </button>
-                  <button
-                    onClick={() => setOffset({ x: 0, y: 0 })}
-                    className="p-3 rounded-xl border border-blue-500/20 bg-blue-600/10 text-blue-400 hover:border-blue-500 hover:text-white flex items-center justify-center font-bold text-xs cursor-pointer"
-                    title="Center Layout"
-                  >
-                    Center
-                  </button>
-                  <button
-                    onClick={() => setOffset(prev => ({ ...prev, x: Math.min(maxX, prev.x + 2) }))}
-                    disabled={offset.x >= maxX}
-                    className="p-3 rounded-xl border border-slate-800 bg-slate-900/30 text-slate-400 hover:border-slate-700 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer"
-                    title="Move Right"
-                  >
-                    ▶
-                  </button>
-
-                  {/* Row 3 */}
-                  <div></div>
-                  <button
-                    onClick={() => setOffset(prev => ({ ...prev, y: Math.min(maxY, prev.y + 2) }))}
-                    disabled={offset.y >= maxY}
-                    className="p-3 rounded-xl border border-slate-800 bg-slate-900/30 text-slate-400 hover:border-slate-700 hover:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer"
-                    title="Move Down"
-                  >
-                    ▼
-                  </button>
-                  <div></div>
-                </div>
-                
-                <span className="text-[11px] text-slate-500 text-center block">
-                  Move in 2 mm steps to align grid for reusing cut paper. Clamped to safe printable limits.
-                </span>
-              </div>
-            </div>
-
-            {/* Toggles */}
-            <div className="border-t border-slate-800 pt-5">
-              <h4 className="text-slate-300 text-sm font-semibold mb-3 flex items-center gap-2">
-                <Frame className="w-4 h-4 text-blue-400" />
-                Sheet Guide Preferences
-              </h4>
-              <div className="flex flex-col gap-3">
-                <label className="flex items-center justify-between p-3 rounded-xl bg-slate-900/20 border border-slate-850 hover:bg-slate-900/40 transition-colors cursor-pointer select-none">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-slate-200">Include Cut Guides</span>
-                    <span className="text-xs text-slate-500">Adds dashed borders around photos for easy cutting</span>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={includeCutLines}
-                    onChange={(e) => setIncludeCutLines(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 bg-slate-850 border-slate-750 rounded focus:ring-blue-500"
-                  />
-                </label>
-                <label className="flex items-center justify-between p-3 rounded-xl bg-slate-900/20 border border-slate-850 hover:bg-slate-900/40 transition-colors cursor-pointer select-none">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-slate-200">Outline Photo Border</span>
-                    <span className="text-xs text-slate-500">Adds a thin border directly on photo boundaries</span>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={includePhotoBorder}
-                    onChange={(e) => setIncludePhotoBorder(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 bg-slate-850 border-slate-750 rounded focus:ring-blue-500"
-                  />
-                </label>
-              </div>
-            </div>
-
             {/* Action Buttons */}
-            <div className="border-t border-slate-800 pt-6 flex flex-col gap-3">
-              {images.length > 1 && (
-                <Button
-                  variant="primary"
-                  onClick={handleDownloadSessionPDF}
-                  icon={Save}
-                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 border-indigo-500 text-white shadow-lg shadow-indigo-500/20"
-                >
-                  Export Entire Session as PDF
-                </Button>
-              )}
+            <div className="flex flex-col gap-3">
               <Button
-                variant={images.length > 1 ? "secondary" : "primary"}
+                variant="primary"
                 onClick={handlePrint}
                 icon={Printer}
                 className="w-full py-3"
               >
-                Print Current Photo Directly
+                Print Photo Directly
               </Button>
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant="secondary"
-                  onClick={handleDownloadPNG}
-                  icon={Download}
-                >
-                  Download PNG
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={handleDownloadPDF}
-                  icon={FileText}
-                >
-                  Download PDF
-                </Button>
-              </div>
             </div>
 
             {/* Go Back / Reset */}
@@ -994,37 +762,7 @@ const StepPreview = memo(() => {
         </div>
       </div>
 
-      {/* Hidden nodes for generating multi-page PDF of all sessions invisibly */}
-      <div className="absolute top-[-10000px] left-[-10000px] pointer-events-none">
-        {images.map((img, idx) => (
-          <div
-            key={`hidden-${img.id}`}
-            ref={(el) => hiddenSheetsRef.current[idx] = el}
-            style={{ width: currentSheet.width, height: currentSheet.height }}
-            className="safe-export relative flex flex-col justify-center items-center box-border"
-          >
-            <div style={{ 
-              color: '#94a3b8', borderBottom: '1px solid #f1f5f9',
-              position: 'absolute', top: '12px', left: '16px', right: '16px',
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              fontSize: '8px', fontFamily: 'monospace', paddingBottom: '4px'
-            }}>
-              <span>AI Passport Photo Copies</span>
-              <span>Scale: 100%</span>
-            </div>
-            {renderSheetContent([img])}
-            <div style={{ 
-              color: '#94a3b8', borderTop: '1px solid #f1f5f9',
-              position: 'absolute', bottom: '12px', left: '16px', right: '16px',
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              fontSize: '8px', fontFamily: 'monospace', paddingTop: '4px'
-            }}>
-              <span>Standard: {passportSize.name}</span>
-              <span>Paper: {currentSheet.title}</span>
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* Hidden nodes removed */}
 
       {/* DIRECT PRINT VIEW & EXPORT LAYOUT (Unified) */}
       <div className="absolute top-[-10000px] left-[-10000px] print:static print:block print-area">

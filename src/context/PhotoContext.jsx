@@ -41,23 +41,17 @@ export const PhotoProvider = ({ children }) => {
     }
   };
 
-  // App preferences
-  const [passportSize, setPassportSize] = useState(() => getLocalItem('pref_passportSize', PASSPORT_SIZES.US));
-  const [sheetSize, setSheetSize] = useState(() => getLocalItem('pref_sheetSize', SHEET_SIZES.PHOTO_4X6));
-  const [copies, setCopies] = useState(() => getLocalItem('pref_copies', 4));
-  const [customSize, setCustomSize] = useState(() => getLocalItem('pref_customSize', { width: 35, height: 45 }));
+  // App preferences (Hardcoded)
+  const [passportSize, setPassportSize] = useState(PASSPORT_SIZES.EU);
+  const [sheetSize, setSheetSize] = useState(SHEET_SIZES.PHOTO_4X6);
+  const [copies, setCopies] = useState(4);
+  const [customSize, setCustomSize] = useState({ width: 35, height: 45 });
   
-  const [includeCutLines, setIncludeCutLines] = useState(() => getLocalItem('pref_cutLines', true));
-  const [includePhotoBorder, setIncludePhotoBorder] = useState(() => getLocalItem('pref_photoBorder', true));
+  const [includeCutLines, setIncludeCutLines] = useState(false);
+  const [includePhotoBorder, setIncludePhotoBorder] = useState(false);
   const [defaultBackgroundColor, setDefaultBackgroundColor] = useState(() => getLocalItem('pref_backgroundColor', 'original'));
 
-  // Save preferences
-  useEffect(() => localStorage.setItem('pref_passportSize', JSON.stringify(passportSize)), [passportSize]);
-  useEffect(() => localStorage.setItem('pref_sheetSize', JSON.stringify(sheetSize)), [sheetSize]);
-  useEffect(() => localStorage.setItem('pref_copies', JSON.stringify(copies)), [copies]);
-  useEffect(() => localStorage.setItem('pref_customSize', JSON.stringify(customSize)), [customSize]);
-  useEffect(() => localStorage.setItem('pref_cutLines', JSON.stringify(includeCutLines)), [includeCutLines]);
-  useEffect(() => localStorage.setItem('pref_photoBorder', JSON.stringify(includePhotoBorder)), [includePhotoBorder]);
+  // Save preferences (Only background color now)
   useEffect(() => localStorage.setItem('pref_backgroundColor', JSON.stringify(defaultBackgroundColor)), [defaultBackgroundColor]);
   
   // Face detection / Model states
@@ -111,9 +105,9 @@ export const PhotoProvider = ({ children }) => {
 
   const loadSession = useCallback((session) => {
     setImages(session.images || []);
-    setPassportSize(session.passportSize || PASSPORT_SIZES.US);
-    setSheetSize(session.sheetSize || SHEET_SIZES.A4);
-    setCopies(session.copies || 4);
+    setPassportSize(PASSPORT_SIZES.EU);
+    setSheetSize(SHEET_SIZES.PHOTO_4X6);
+    setCopies(4);
     setStep(3); // Go straight to preview
   }, []);
 
@@ -127,7 +121,7 @@ export const PhotoProvider = ({ children }) => {
       return [];
     });
     setStep(1);
-    setPassportSize(PASSPORT_SIZES.US);
+    setPassportSize(PASSPORT_SIZES.EU);
     setSheetSize(SHEET_SIZES.PHOTO_4X6);
     setCopies(4);
     setCustomSize({ width: 35, height: 45 });

@@ -44,35 +44,7 @@ const StepCrop = () => {
   const canvasRef = useRef(null);
   const activeImage = useMemo(() => images[activeIdx], [images, activeIdx]);
 
-  // Update the passport size when user selects preset
-  const handlePassportSizeChange = useCallback((presetId) => {
-    if (presetId === 'CUSTOM') {
-      setPassportSize({
-        ...PASSPORT_SIZES.CUSTOM,
-        width: customSize.width,
-        height: customSize.height,
-        aspect: customSize.width / customSize.height
-      });
-    } else {
-      setPassportSize(PASSPORT_SIZES[presetId]);
-    }
-  }, [customSize, setPassportSize]);
 
-  // Handle custom size input change
-  const handleCustomSizeChange = useCallback((dimension, value) => {
-    const val = parseFloat(value) || 1;
-    const newCustomSize = { ...customSize, [dimension]: val };
-    setCustomSize(newCustomSize);
-    
-    if (passportSize.id === 'CUSTOM') {
-      setPassportSize({
-        ...PASSPORT_SIZES.CUSTOM,
-        width: newCustomSize.width,
-        height: newCustomSize.height,
-        aspect: newCustomSize.width / newCustomSize.height
-      });
-    }
-  }, [customSize, passportSize.id, setCustomSize, setPassportSize]);
 
   // Callback when AI face detection highlights a face
   const handleFaceDetected = useCallback((faceData) => {
@@ -313,39 +285,6 @@ const StepCrop = () => {
         
         {/* Left Column: Crop Editor using react-easy-crop (6/12 width) */}
         <div className="lg:col-span-7 flex flex-col gap-4">
-          {/* Size Selector */}
-          <Card className="p-4 flex flex-col gap-3 border border-slate-800 bg-slate-900/50">
-            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-              <Maximize className="w-4 h-4 text-blue-400" />
-              Passport Photo Size
-            </h3>
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-               {Object.values(PASSPORT_SIZES).map(size => (
-                 <button 
-                   key={size.id}
-                   onClick={() => handlePassportSizeChange(size.id)}
-                   className={`p-2 rounded-lg text-[10px] sm:text-xs font-semibold text-center transition-all ${
-                     passportSize.id === size.id ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
-                   }`}
-                 >
-                   {size.label}
-                 </button>
-               ))}
-            </div>
-            {passportSize.id === 'CUSTOM' && (
-              <div className="flex items-center gap-4 mt-2 p-3 bg-slate-950 border border-slate-800 rounded-xl">
-                <div className="flex-1 flex flex-col gap-1.5">
-                  <label className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Width (mm)</label>
-                  <input type="number" min="10" max="200" value={customSize.width} onChange={(e) => handleCustomSizeChange('width', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors" />
-                </div>
-                <div className="flex-1 flex flex-col gap-1.5">
-                  <label className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Height (mm)</label>
-                  <input type="number" min="10" max="200" value={customSize.height} onChange={(e) => handleCustomSizeChange('height', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors" />
-                </div>
-              </div>
-            )}
-          </Card>
-
           <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 mt-2">
             <Sparkles className="w-4 h-4 text-blue-400" />
             Interactive Crop Editor #{activeIdx + 1}
