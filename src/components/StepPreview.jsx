@@ -41,7 +41,7 @@ const StepPreview = memo(() => {
     triggerHistoryRefresh
   } = usePhoto();
 
-  const [activeIdx, setActiveIdx] = useState(0);
+  const [activeIdx, setActiveIdx] = useState(images.length > 1 ? 'combined' : 0);
   const [isExporting, setIsExporting] = useState(false);
   const [exportType, setExportType] = useState(''); // 'png' | 'pdf' | 'session'
   const [hasSaved, setHasSaved] = useState(false);
@@ -121,9 +121,11 @@ const StepPreview = memo(() => {
     const photoW = rotatePhoto ? photo.h : photo.w;
     const photoH = rotatePhoto ? photo.w : photo.h;
     
+    const actualCols = Math.min(cols, flattenedImages.length);
     const activeRows = Math.ceil(flattenedImages.length / cols);
-    const gridWMm = cols * photoW + (cols - 1) * gapMm;
-    const gridHMm = activeRows * photoH + (activeRows - 1) * gapMm;
+    const actualRows = Math.min(activeLayout.rows, activeRows);
+    const gridWMm = actualCols * photoW + (Math.max(1, actualCols) - 1) * gapMm;
+    const gridHMm = actualRows * photoH + (Math.max(1, actualRows) - 1) * gapMm;
     
 
     
@@ -430,10 +432,12 @@ const StepPreview = memo(() => {
   const baseMaxCopies = layoutInfo.max;
   const maxCopies = activeIdx === 'combined' ? Math.floor(baseMaxCopies / images.length) : baseMaxCopies;
 
-  // Automatically recalculate and set copies to max possible whenever paper size or passport size layout details change
+  // Clamp copies to max possible whenever paper size or passport size layout details change
   useEffect(() => {
-    setCopies(maxCopies > 0 ? maxCopies : 1);
-  }, [maxCopies, setCopies]);
+    if (copies > maxCopies || copies === 0) {
+      setCopies(maxCopies > 0 ? maxCopies : 1);
+    }
+  }, [maxCopies, copies, setCopies]);
 
   const paper = getDimensionsMm(sheetSize.id);
   const photo = getDimensionsMm(passportSize.id);
@@ -444,9 +448,11 @@ const StepPreview = memo(() => {
   const photoH = rotatePhoto ? photo.w : photo.h;
   
   const totalPhotos = activeImagesArray.length * copies;
+  const actualCols = Math.min(cols, totalPhotos);
   const activeRows = Math.ceil(totalPhotos / cols);
-  const gridW = cols * photoW + (cols - 1) * gapMm;
-  const gridH = activeRows * photoH + (activeRows - 1) * gapMm;
+  const actualRows = Math.min(layoutInfo.rows, activeRows);
+  const gridW = actualCols * photoW + (Math.max(1, actualCols) - 1) * gapMm;
+  const gridH = actualRows * photoH + (Math.max(1, actualRows) - 1) * gapMm;
 
   const printableW = paper.w - (2 * paper.pad);
   const printableH = paper.h - (2 * paper.pad);
