@@ -81,52 +81,6 @@ const StepPreview = memo(() => {
     }
   }, [hasSaved, images, passportSize, sheetSize, copies, addToast, triggerHistoryRefresh]);
 
-  const generateLayout = (imagesArray) => {
-    const paper = { w: 101.6, h: 152.4, pad: 0 };
-    const gapMm = 2;
-    const photoW = 45; // 35x45 rotated 90 degrees
-    const photoH = 35;
-    
-    let layoutImages = [];
-    let cols = 2;
-    let rows = 2;
-    
-    if (imagesArray.length === 1) {
-      layoutImages = [imagesArray[0], imagesArray[0], imagesArray[0], imagesArray[0]];
-      rows = 2;
-    } else if (imagesArray.length >= 2) {
-      layoutImages = [
-        imagesArray[0], imagesArray[0], imagesArray[0], imagesArray[0],
-        imagesArray[1], imagesArray[1], imagesArray[1], imagesArray[1]
-      ];
-      rows = 4;
-    } else {
-      return { paper, items: [], gridW: 0, gridH: 0 };
-    }
-    
-    const gridW = cols * photoW + (cols - 1) * gapMm;
-    const gridH = rows * photoH + (rows - 1) * gapMm;
-    
-    const startX = (paper.w - gridW) / 2;
-    const startY = (paper.h - gridH) / 2;
-    
-    const items = layoutImages.map((img, i) => {
-      const c = i % cols;
-      const r = Math.floor(i / cols);
-      return {
-        img,
-        id: "sheet-$(${img?.id || i})-${i}",
-        x: startX + c * (photoW + gapMm),
-        y: startY + r * (photoH + gapMm),
-        w: photoW,
-        h: photoH,
-        rotate: true
-      };
-    });
-    
-    return { paper, items, gridW, gridH };
-  };
-
   const generateCanvasFromState = async () => {
     const layout = generateLayout(activeImagesArray);
     const DPI = 600;
@@ -196,7 +150,7 @@ const StepPreview = memo(() => {
     }
     
     const fontSizePx = Math.round(8 * (DPI / 96));
-    ctx.font = "$fontSizePx px monospace";
+    ctx.font = `${fontSizePx}px monospace`;
     ctx.fillStyle = '#94a3b8';
     ctx.textBaseline = 'top';
     ctx.textAlign = 'left';
@@ -210,21 +164,360 @@ const StepPreview = memo(() => {
     return canvas;
   };
 
+  const handleDownloadPNG = async () => {
+    setIsExporting(true);
+    setExportType('png');
+    try {
+      await new Promise(r => setTimeout(r, 100)); 
+      const flattenedImages = [];
+      for (const img of activeImagesArray) {
+        for (let i = 0; i < copies; i++) flattenedImages.push(img);
+      }
+      const canvas = await generateCanvasFromState(flattenedImages);
+      const pngDataUrl = canvas.toDataURL("image/png", 1.0);
+      const link = document.createElement("a");
+      link.download = "passport-photo-sheet.png";
+      link.href = pngDataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Error generating PNG:', err);
+      addToast(`Could not generate PNG: ${err.message || 'Unknown error'}. Please try again.`, 'error');
+    } finally {
+      setIsExporting(false);
+      setExportType('');
+    }
+  };
+
+  const getPdfFormat = () => {
+    if (sheetSize.id === 'PHOTO_4X6') {
+      return { format: [101.6, 152.4], unit: 'mm', pdfWidth: 101.6, pdfHeight: 152.4 };
+    } else if (sheetSize.id === 'LETTER') {
+      return { format: [215.9, 279.4], unit: 'mm', pdfWidth: 215.9, pdfHeight: 279.4 };
+    }
+    return { format: 'a4', unit: 'mm', pdfWidth: 210, pdfHeight: 297 };
+  };
+
+  const handleDownloadPDF = async () => {
+    setIsExporting(true);
+    setExportType('pdf');
+    try {
+      await new Promise(r => setTimeout(r, 100)); 
+      const flattenedImages = [];
+      for (const img of activeImagesArray) {
+        for (let i = 0; i < copies; i++) flattenedImages.push(img);
+      }
+      const canvas = await generateCanvasFromState(flattenedImages);
+      const pngDataUrl = canvas.toDataURL("image/png", 1.0);
+      const { format, unit, pdfWidth, pdfHeight } = getPdfFormat();
+      const pdf = new jsPDF({ orientation: "portrait", unit, format, compress: true });
+      pdf.addImage(pngDataUrl, "PNG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
+      pdf.save("passport-photo-sheet.pdf");
+    } catch (err) {
+      console.error('Error generating PDF:', err);
+      addToast(`Could not generate PDF: ${err.message || 'Unknown error'}. Please try again.`, 'error');
+    } finally {
+      setIsExporting(false);
+      setExportType('');
+    }
+  };
+
+  const handleDownloadSessionPDF = async () => {
+    if (images.length === 0) return;
+    setIsExporting(true);
+    setExportType('session');
+    try {
+      await new Promise(r => setTimeout(r, 100)); 
+      const { format, unit, pdfWidth, pdfHeight } = getPdfFormat();
+      const pdf = new jsPDF({ orientation: 'portrait', unit, format, compress: true });
+      
+      const flattenedImages = [];
+      for (const img of images) {
+        for (let i = 0; i < copies; i++) {
+          flattenedImages.push(img);
+        }
+      }
+      
+      const maxPerSheet = calculateMaxCopies().max;
+      const totalSheets = Math.ceil(flattenedImages.length / maxPerSheet);
+      
+      for (let s = 0; s < totalSheets; s++) {
+        const sheetImages = flattenedImages.slice(s * maxPerSheet, (s + 1) * maxPerSheet);
+        const canvas = await generateCanvasFromState(sheetImages);
+        const pngDataUrl = canvas.toDataURL("image/png", 1.0);
+        
+        if (s > 0) pdf.addPage();
+        pdf.addImage(pngDataUrl, "PNG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
+      }
+      
+      if (totalSheets === 0) throw new Error("No pages could be rendered");
+      pdf.save("passport-photo-session.pdf");
+    } catch (err) {
+      console.error('Error generating Session PDF:', err);
+      addToast(`Could not generate Session PDF: ${err.message || 'Unknown error'}. Please try again.`, 'error');
+    } finally {
+      setIsExporting(false);
+      setExportType('');
+    }
+  };
+
+  // Direct print (Uses browser print dialog, will print all visible print-area nodes)
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const sheetStyles = {
+    PHOTO_4X6: { width: '4in', height: '6in', padding: '0.25in', title: '4" x 6" Photo Paper' },
+    A4: { width: '210mm', height: '297mm', padding: '15mm', title: 'A4 Document Paper' },
+    LETTER: { width: '8.5in', height: '11in', padding: '0.75in', title: 'Letter Document Paper' }
+  };
+
+  const photoStyles = {
+    US: { width: '2in', height: '2in' },
+    EU: { width: '35mm', height: '45mm' },
+    CA: { width: '50mm', height: '70mm' },
+    CN: { width: '33mm', height: '48mm' }
+  };
+
+  const currentSheet = sheetStyles[sheetSize.id];
+  const currentPhoto = photoStyles[passportSize.id] || { width: `${passportSize.width}mm`, height: `${passportSize.height}mm` };
+
+  // Calculate maximum copies that fit on the selected paper
+  const getDimensionsMm = (id) => {
+    switch (id) {
+      case 'PHOTO_4X6': return { w: 101.6, h: 152.4, pad: 3 }; // 3mm borderless margin for photo paper
+      case 'A4': return { w: 210, h: 297, pad: 8 }; // 8mm print margin
+      case 'LETTER': return { w: 215.9, h: 279.4, pad: 8 }; // 8mm print margin
+      case 'US': return { w: 50.8, h: 50.8 };
+      case 'EU': return { w: 35, h: 45 };
+      case 'CA': return { w: 50, h: 70 };
+      case 'CN': return { w: 33, h: 48 };
+      case 'VISA': return { w: 51, h: 51 };
+      // Fallback for custom or unknown sizes, assuming 2x2 inches default
+      default: return { 
+        w: passportSize.width || 50.8, 
+        h: passportSize.height || 50.8,
+        pad: 0 
+      };
+    }
+  };
+
+  const generateLayout = (imagesArray) => {
+    const paper = { w: 101.6, h: 152.4, pad: 0 };
+    const gapMm = 2;
+    const photoW = 45; // 35x45 rotated 90 degrees
+    const photoH = 35;
+    
+    let layoutImages = [];
+    let cols = 2;
+    let rows = 2;
+    
+    if (imagesArray.length === 1) {
+      layoutImages = [imagesArray[0], imagesArray[0], imagesArray[0], imagesArray[0]];
+      rows = 2;
+    } else if (imagesArray.length >= 2) {
+      layoutImages = [
+        imagesArray[0], imagesArray[0], imagesArray[0], imagesArray[0],
+        imagesArray[1], imagesArray[1], imagesArray[1], imagesArray[1]
+      ];
+      rows = 4;
+    } else {
+      return { paper, items: [], gridW: 0, gridH: 0 };
+    }
+    
+    const gridW = cols * photoW + (cols - 1) * gapMm;
+    const gridH = rows * photoH + (rows - 1) * gapMm;
+    
+    const startX = (paper.w - gridW) / 2;
+    const startY = (paper.h - gridH) / 2;
+    
+    const items = layoutImages.map((img, i) => {
+      const c = i % cols;
+      const r = Math.floor(i / cols);
+      return {
+        img,
+        id: `sheet-${img?.id || i}-${i}`,
+        x: startX + c * (photoW + gapMm),
+        y: startY + r * (photoH + gapMm),
+        w: photoW,
+        h: photoH,
+        rotate: true
+      };
+    });
+    
+    return { paper, items, gridW, gridH };
+  };
+  const layoutInfo = calculateMaxCopies();
+  const baseMaxCopies = layoutInfo.max;
+  const maxCopies = activeIdx === 'combined' ? Math.floor(baseMaxCopies / images.length) : baseMaxCopies;
+
+  // Clamp copies to max possible whenever paper size or passport size layout details change
+  useEffect(() => {
+    if (copies > maxCopies || copies === 0) {
+      setCopies(maxCopies > 0 ? maxCopies : 1);
+    }
+  }, [maxCopies, copies, setCopies]);
+
+  const paper = getDimensionsMm(sheetSize.id);
+  const photo = getDimensionsMm(passportSize.id);
+  const gapMm = sheetSize.id === 'PHOTO_4X6' ? 2 : 4;
+  const { cols, rotatePhoto } = layoutInfo;
+  
+  const photoW = rotatePhoto ? photo.h : photo.w;
+  const photoH = rotatePhoto ? photo.w : photo.h;
+  
+  const totalPhotos = activeImagesArray.length * copies;
+  const actualCols = Math.min(cols, totalPhotos);
+  const activeRows = Math.ceil(totalPhotos / cols);
+  const actualRows = Math.min(layoutInfo.rows, activeRows);
+  const gridW = actualCols * photoW + (Math.max(1, actualCols) - 1) * gapMm;
+  const gridH = actualRows * photoH + (Math.max(1, actualRows) - 1) * gapMm;
+
+  const printableW = paper.w - (2 * paper.pad);
+  const printableH = paper.h - (2 * paper.pad);
+
+  // Maximum shift limits in mm
+  const maxX = Math.max(0, (printableW - gridW) / 2);
+  const minX = -maxX;
+  const maxY = Math.max(0, (printableH - gridH) / 2);
+  const minY = -maxY;
+
+  // Reset offset when sheet size changes
+  useEffect(() => {
+    setOffset({ x: 0, y: 0 });
+  }, [sheetSize.id]);
+
+  // Clamp current offset when layout constraints change
+  useEffect(() => {
+    setOffset(prev => ({
+      x: Math.max(minX, Math.min(maxX, prev.x)),
+      y: Math.max(minY, Math.min(maxY, prev.y))
+    }));
+  }, [minX, maxX, minY, maxY]);
+
+  // Reset custom dragged positions when layout changes significantly
+  useEffect(() => {
+    setCustomPositions({});
+  }, [sheetSize.id, passportSize.id, images.length, copies, activeIdx]);
+
+  const handlePointerDown = (e, uniqueId, currentXMm, currentYMm) => {
+    e.preventDefault();
+    e.target.setPointerCapture(e.pointerId);
+    setDragState({
+      id: uniqueId,
+      startX: e.clientX,
+      startY: e.clientY,
+      initX: currentXMm,
+      initY: currentYMm
+    });
+  };
+
+  const handlePointerMove = (e) => {
+    if (dragState.id) {
+      const container = sheetScaleRef.current;
+      const scale = container ? container.getBoundingClientRect().width / container.offsetWidth : 1;
+      const pxToMm = (25.4 / 96) / scale;
+      
+      const dx = (e.clientX - dragState.startX) * pxToMm;
+      const dy = (e.clientY - dragState.startY) * pxToMm;
+      
+      setCustomPositions(prev => ({
+        ...prev,
+        [dragState.id]: {
+          x: dragState.initX + dx,
+          y: dragState.initY + dy
+        }
+      }));
+    }
+  };
+
+  const handlePointerUp = (e) => {
+    if (dragState.id) {
+      try { e.target.releasePointerCapture(e.pointerId); } catch(err) {}
+      setDragState({ id: null, startX: 0, startY: 0, initX: 0, initY: 0 });
+    }
+  };
+
+  const renderPhoto = (imgSrc, key, rotate, xMm, yMm) => {
+    const isDraggingThis = dragState.id === key;
+    return (
+      <div
+        key={key}
+        onPointerDown={(e) => handlePointerDown(e, key, xMm, yMm)}
+        style={{ 
+          position: 'absolute',
+          left: `${xMm}mm`,
+          top: `${yMm}mm`,
+          width: rotate ? currentPhoto.height : currentPhoto.width, 
+          height: rotate ? currentPhoto.width : currentPhoto.height,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          cursor: isDraggingThis ? 'grabbing' : 'grab',
+          zIndex: isDraggingThis ? 50 : 10,
+          boxShadow: isDraggingThis ? '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3)' : 'none',
+          ...(includePhotoBorder ? { border: '1px solid #cbd5e1' } : {})
+        }}
+        className={`transition-shadow duration-200 touch-none`}
+      >
+      {includeCutLines && (
+        <div style={{ position: 'absolute', top: '-6px', left: '-6px', right: '-6px', bottom: '-6px', border: '1px dashed rgba(203, 213, 225, 0.6)', pointerEvents: 'none' }} />
+      )}
+      {imgSrc ? (
+        <img 
+          src={imgSrc} 
+          alt="Passport Cutout" 
+          style={rotate ? {
+            width: currentPhoto.width,
+            height: currentPhoto.height,
+            transform: 'rotate(90deg)',
+            transformOrigin: 'center',
+            objectFit: 'cover'
+          } : {
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover'
+          }}
+        />
+      ) : (
+        <div style={{ backgroundColor: '#f1f5f9', color: '#94a3b8', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '500' }}>No Image</div>
+      )}
+    </div>
+    );
+  };
+
   const renderSheetContent = () => {
     const layout = generateLayout(activeImagesArray);
+    const paperPad = currentSheet.pad || 0;
 
     return (
-      <div className="w-full h-full relative box-border overflow-hidden">
-        <div style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%' }}>
+      <div 
+        className="w-full h-full relative box-border overflow-hidden"
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+        ref={sheetScaleRef}
+      >
+        <div 
+          style={{ 
+            position: 'absolute',
+            left: `${paperPad}mm`,
+            top: `${paperPad}mm`,
+            width: `calc(100% - ${2 * paperPad}mm)`,
+            height: `calc(100% - ${2 * paperPad}mm)`,
+            transform: `translate(${offset.x}mm, ${offset.y}mm)`,
+            transition: dragState.id ? 'none' : 'transform 0.15s ease-out'
+          }}
+        >
           {layout.items.map((item, idx) => (
             <div
               key={item.id + idx}
               style={{ 
                 position: 'absolute',
-                left: "$(${item.x})mm",
-                top: "$(${item.y})mm",
-                width: "$(${item.w})mm", 
-                height: "$(${item.h})mm",
+                left: `${item.x}mm`,
+                top: `${item.y}mm`,
+                width: `${item.w}mm`, 
+                height: `${item.h}mm`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -240,8 +533,8 @@ const StepPreview = memo(() => {
                   src={item.img.croppedPreview} 
                   alt="Passport Cutout" 
                   style={item.rotate ? {
-                    width: "$(${item.h})mm",
-                    height: "$(${item.w})mm",
+                    width: `${item.h}mm`,
+                    height: `${item.w}mm`,
                     transform: 'rotate(90deg)',
                     transformOrigin: 'center',
                     objectFit: 'cover'
@@ -282,7 +575,7 @@ const StepPreview = memo(() => {
       {/* Tabs removed as per requirement */}
 
       {/* Main Grid container */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start no-print">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* Left Side: Interactive Preview Canvas */}
         <div className="lg:col-span-7 flex flex-col items-center gap-6 print:block print:w-full">
