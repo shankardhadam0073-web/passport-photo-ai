@@ -443,7 +443,9 @@ const StepPreview = memo(() => {
   const photoW = rotatePhoto ? photo.h : photo.w;
   const photoH = rotatePhoto ? photo.w : photo.h;
   
-  const activeRows = Math.ceil(copies / cols);
+  const activeImagesArray = activeIdx === 'combined' ? images : [images[activeIdx]];
+  const totalPhotos = activeImagesArray.length * copies;
+  const activeRows = Math.ceil(totalPhotos / cols);
   const gridW = cols * photoW + (cols - 1) * gapMm;
   const gridH = activeRows * photoH + (activeRows - 1) * gapMm;
 
