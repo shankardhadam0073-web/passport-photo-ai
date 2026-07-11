@@ -592,10 +592,10 @@ const StepPreview = memo(() => {
         <div 
           style={{ 
             position: 'absolute',
-            left: 0,
-            top: 0,
-            width: '100%',
-            height: '100%',
+            left: `${paper.pad}mm`,
+            top: `${paper.pad}mm`,
+            width: `calc(100% - ${2 * paper.pad}mm)`,
+            height: `calc(100% - ${2 * paper.pad}mm)`,
             transform: `translate(${offset.x}mm, ${offset.y}mm)`,
             transition: dragState.id ? 'none' : 'transform 0.15s ease-out'
           }}
@@ -687,7 +687,6 @@ const StepPreview = memo(() => {
                 style={{
                   width: currentSheet.width,
                   height: currentSheet.height,
-                  padding: currentSheet.padding,
                 }}
                 className="relative box-border select-none bg-white"
               >
@@ -1001,7 +1000,7 @@ const StepPreview = memo(() => {
           <div
             key={`hidden-${img.id}`}
             ref={(el) => hiddenSheetsRef.current[idx] = el}
-            style={{ width: currentSheet.width, height: currentSheet.height, padding: currentSheet.padding }}
+            style={{ width: currentSheet.width, height: currentSheet.height }}
             className="safe-export relative flex flex-col justify-center items-center box-border"
           >
             <div style={{ 
@@ -1034,7 +1033,6 @@ const StepPreview = memo(() => {
           style={{
             width: currentSheet.width,
             height: currentSheet.height,
-            padding: currentSheet.padding,
             backgroundColor: 'white',
             color: 'black',
             position: 'relative',
