@@ -346,6 +346,43 @@ const StepPreview = memo(() => {
     
     return { paper, items, gridW, gridH };
   };
+
+  const calculateMaxCopies = () => {
+    const paper = getDimensionsMm(sheetSize.id);
+    const photo = getDimensionsMm(passportSize.id);
+    const gapMm = sheetSize.id === 'PHOTO_4X6' ? 2 : 4; // Approx CSS gap
+
+    const printableW = paper.w - (2 * paper.pad);
+    const printableH = paper.h - (2 * paper.pad);
+
+    // Option A: Normal/Portrait orientation
+    const colsA = Math.floor((printableW + gapMm) / (photo.w + gapMm));
+    const rowsA = Math.floor((printableH + gapMm) / (photo.h + gapMm));
+    const copiesA = Math.max(1, colsA * rowsA);
+
+    // Option B: Swapped/Landscape orientation (rotate photos 90 deg to fit more)
+    const colsB = Math.floor((printableW + gapMm) / (photo.h + gapMm));
+    const rowsB = Math.floor((printableH + gapMm) / (photo.w + gapMm));
+    const copiesB = Math.max(1, colsB * rowsB);
+
+    // Choose the orientation that yields maximum copies
+    if (copiesB > copiesA) {
+      return {
+        max: copiesB,
+        cols: colsB,
+        rows: rowsB,
+        rotatePhoto: true
+      };
+    } else {
+      return {
+        max: copiesA,
+        cols: colsA,
+        rows: rowsA,
+        rotatePhoto: false
+      };
+    }
+  };
+
   const layoutInfo = calculateMaxCopies();
   const baseMaxCopies = layoutInfo.max;
   const maxCopies = activeIdx === 'combined' ? Math.floor(baseMaxCopies / images.length) : baseMaxCopies;
