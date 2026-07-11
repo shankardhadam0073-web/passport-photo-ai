@@ -76,7 +76,7 @@ const StepPreview = memo(() => {
     }
   }, [hasSaved, images, passportSize, sheetSize, copies, addToast, triggerHistoryRefresh]);
 
-  const generateCanvasFromState = async (imagesToRender, copiesPerImage) => {
+  const generateCanvasFromState = async (flattenedImages) => {
     const paper = getDimensionsMm(sheetSize.id);
     const photo = getDimensionsMm(passportSize.id);
     const gapMm = sheetSize.id === 'PHOTO_4X6' ? 2 : 4;
@@ -101,34 +101,14 @@ const StepPreview = memo(() => {
     ctx.imageSmoothingQuality = 'high';
     
     const loadedImages = {};
-    for (const img of imagesToRender) {
-      if (img.originalHires && !loadedImages[img.id]) {
-        const defaultCrop = {
-          x: 0,
-          y: 0,
-          width: 400,
-          height: Math.round(400 / (passportSize.aspect || 1))
-        };
-        
-        const hiresCropUrl = await getCroppedImg(
-          img.originalHires,
-          img.croppedAreaPixels || defaultCrop,
-          img.rotation,
-          img.brightness,
-          img.contrast,
-          img.saturation,
-          img.exposure,
-          img.sharpness,
-          img.backgroundColor,
-          img.backgroundMask
-        );
-
+    for (const img of flattenedImages) {
+      if (!loadedImages[img.id]) {
         loadedImages[img.id] = await new Promise((resolve, reject) => {
           const image = new Image();
           image.crossOrigin = "anonymous";
           image.onload = () => resolve(image);
           image.onerror = reject;
-          image.src = hiresCropUrl;
+          image.src = img.croppedPreview;
         });
       }
     }
@@ -136,7 +116,7 @@ const StepPreview = memo(() => {
     const photoW = rotatePhoto ? photo.h : photo.w;
     const photoH = rotatePhoto ? photo.w : photo.h;
     
-    const activeRows = Math.ceil((imagesToRender.length * copiesPerImage) / cols);
+    const activeRows = Math.ceil(flattenedImages.length / cols);
     const gridWMm = cols * photoW + (cols - 1) * gapMm;
     const gridHMm = activeRows * photoH + (activeRows - 1) * gapMm;
     
@@ -147,7 +127,6 @@ const StepPreview = memo(() => {
     const startYMm = centerY - (gridHMm / 2);
     
     let currentImgIdx = 0;
-    let currentCopy = 0;
     
     const cutLineWidth = Math.max(1, Math.round(1 * (DPI / 96))); 
     const borderLineWidth = Math.max(1, Math.round(1 * (DPI / 96))); 
@@ -155,7 +134,7 @@ const StepPreview = memo(() => {
     
     for (let r = 0; r < activeRows; r++) {
       for (let c = 0; c < cols; c++) {
-        if (currentImgIdx >= imagesToRender.length) break;
+        if (currentImgIdx >= flattenedImages.length) break;
         
         const xMm = startXMm + c * (photoW + gapMm);
         const yMm = startYMm + r * (photoH + gapMm);
@@ -165,7 +144,7 @@ const StepPreview = memo(() => {
         const wPx = Math.round(photoW * pxPerMm);
         const hPx = Math.round(photoH * pxPerMm);
         
-        const imgData = imagesToRender[currentImgIdx];
+        const imgData = flattenedImages[currentImgIdx];
         const htmlImage = loadedImages[imgData.id];
         
         if (htmlImage) {
@@ -222,11 +201,7 @@ const StepPreview = memo(() => {
           ctx.setLineDash([]);
         }
         
-        currentCopy++;
-        if (currentCopy >= copiesPerImage) {
-          currentCopy = 0;
-          currentImgIdx++;
-        }
+        currentImgIdx++;
       }
     }
     
@@ -246,7 +221,7 @@ const StepPreview = memo(() => {
     ctx.stroke();
     
     ctx.textAlign = 'left';
-    ctx.fillText('AI PASSPORT PHOTO COPIES' + (imagesToRender.length > 1 ? ' GENERATOR' : ''), textMarginXPx, textMarginYPx);
+    ctx.fillText('AI PASSPORT PHOTO COPIES', textMarginXPx, textMarginYPx);
     ctx.textAlign = 'right';
     ctx.fillText('SCALE: 100%', canvasW - textMarginXPx, textMarginYPx);
     
@@ -268,7 +243,11 @@ const StepPreview = memo(() => {
     setExportType('png');
     try {
       await new Promise(r => setTimeout(r, 100)); 
-      const canvas = await generateCanvasFromState(activeImagesArray, copies);
+      const flattenedImages = [];
+      for (const img of activeImagesArray) {
+        for (let i = 0; i < copies; i++) flattenedImages.push(img);
+      }
+      const canvas = await generateCanvasFromState(flattenedImages);
       const pngDataUrl = canvas.toDataURL("image/png", 1.0);
       const link = document.createElement("a");
       link.download = "passport-photo-sheet.png";
@@ -297,7 +276,11 @@ const StepPreview = memo(() => {
     setExportType('pdf');
     try {
       await new Promise(r => setTimeout(r, 100)); 
-      const canvas = await generateCanvasFromState(activeImagesArray, copies);
+      const flattenedImages = [];
+      for (const img of activeImagesArray) {
+        for (let i = 0; i < copies; i++) flattenedImages.push(img);
+      }
+      const canvas = await generateCanvasFromState(flattenedImages);
       const pngDataUrl = canvas.toDataURL("image/png", 1.0);
       const { format, unit, pdfWidth, pdfHeight } = getPdfFormat();
       const pdf = new jsPDF({ orientation: "portrait", unit, format, compress: true });
@@ -320,18 +303,27 @@ const StepPreview = memo(() => {
       await new Promise(r => setTimeout(r, 100)); 
       const { format, unit, pdfWidth, pdfHeight } = getPdfFormat();
       const pdf = new jsPDF({ orientation: 'portrait', unit, format, compress: true });
-      let addedPages = 0;
-      const sessionMaxCopies = calculateMaxCopies().max;
       
-      for (let i = 0; i < images.length; i++) {
-        const img = images[i];
-        const canvas = await generateCanvasFromState([img], sessionMaxCopies);
-        const pngDataUrl = canvas.toDataURL("image/png", 1.0);
-        if (addedPages > 0) pdf.addPage();
-        pdf.addImage(pngDataUrl, "PNG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
-        addedPages++;
+      const flattenedImages = [];
+      for (const img of images) {
+        for (let i = 0; i < copies; i++) {
+          flattenedImages.push(img);
+        }
       }
-      if (addedPages === 0) throw new Error("No pages could be rendered");
+      
+      const maxPerSheet = calculateMaxCopies().max;
+      const totalSheets = Math.ceil(flattenedImages.length / maxPerSheet);
+      
+      for (let s = 0; s < totalSheets; s++) {
+        const sheetImages = flattenedImages.slice(s * maxPerSheet, (s + 1) * maxPerSheet);
+        const canvas = await generateCanvasFromState(sheetImages);
+        const pngDataUrl = canvas.toDataURL("image/png", 1.0);
+        
+        if (s > 0) pdf.addPage();
+        pdf.addImage(pngDataUrl, "PNG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
+      }
+      
+      if (totalSheets === 0) throw new Error("No pages could be rendered");
       pdf.save("passport-photo-session.pdf");
     } catch (err) {
       console.error('Error generating Session PDF:', err);
@@ -507,6 +499,11 @@ const StepPreview = memo(() => {
     const gapSize = sheetSize.id === 'PHOTO_4X6' ? '8px' : '16px';
     const { cols, rotatePhoto } = layoutInfo;
 
+    const flattenedImages = [];
+    for (const img of imagesToRender) {
+      for (let i = 0; i < copies; i++) flattenedImages.push(img);
+    }
+
     return (
       <div className="w-full h-full flex items-center justify-center box-border">
         <div 
@@ -522,10 +519,8 @@ const StepPreview = memo(() => {
             transition: 'transform 0.15s ease-out'
           }}
         >
-          {imagesToRender.map(img => 
-            Array.from({ length: copies }).map((_, copyIdx) => 
-              renderPhoto(img.croppedPreview, `sheet-${img.id}-${copyIdx}`, rotatePhoto)
-            )
+          {flattenedImages.map((img, idx) => 
+            renderPhoto(img.croppedPreview, `sheet-${img.id}-${idx}`, rotatePhoto)
           )}
         </div>
       </div>

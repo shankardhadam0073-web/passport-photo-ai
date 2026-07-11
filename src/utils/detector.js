@@ -209,7 +209,7 @@ export function segmentBackground(imageUrl) {
             const imageData = ctx.createImageData(img.width, img.height);
             
             for (let i = 0; i < mask.length; ++i) {
-              const val = mask[i] > 0 ? 255 : 0;
+              const val = mask[i] === 0 ? 255 : 0;
               const offset = i * 4;
               imageData.data[offset] = 0;
               imageData.data[offset + 1] = 0;

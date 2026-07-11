@@ -152,8 +152,8 @@ export async function getCroppedImg(
     
     mCtx.translate(bBoxWidth / 2, bBoxHeight / 2);
     mCtx.rotate(rotRad);
-    mCtx.translate(-maskImg.width / 2, -maskImg.height / 2);
-    mCtx.drawImage(maskImg, 0, 0);
+    mCtx.translate(-image.width / 2, -image.height / 2);
+    mCtx.drawImage(maskImg, 0, 0, image.width, image.height);
     
     const maskData = mCtx.getImageData(pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height);
     const mCropCanvas = document.createElement('canvas');

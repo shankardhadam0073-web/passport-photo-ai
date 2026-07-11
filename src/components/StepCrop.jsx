@@ -8,7 +8,7 @@ import AutoCrop from './AutoCrop';
 import Card from './Common/Card';
 import Button from './Common/Button';
 import { calculatePassportCrop } from '../utils/detector';
-import { getCroppedImg } from '../utils/cropper';
+import { getCroppedImg, createImage } from '../utils/cropper';
 import { 
   ArrowLeft, 
   ArrowRight,
@@ -227,9 +227,25 @@ const StepCrop = () => {
             height: Math.round(400 / passportSize.aspect)
           };
 
+          let targetSrc = img.original;
+          let targetCrop = img.croppedAreaPixels || defaultCrop;
+          
+          if (img.originalHires) {
+             const origHtml = await createImage(img.original);
+             const hiresHtml = await createImage(img.originalHires);
+             const scale = hiresHtml.width / origHtml.width;
+             targetSrc = img.originalHires;
+             targetCrop = {
+                x: Math.round(targetCrop.x * scale),
+                y: Math.round(targetCrop.y * scale),
+                width: Math.round(targetCrop.width * scale),
+                height: Math.round(targetCrop.height * scale)
+             };
+          }
+
           const croppedUrl = await getCroppedImg(
-            img.original,
-            img.croppedAreaPixels || defaultCrop,
+            targetSrc,
+            targetCrop,
             img.rotation,
             img.brightness,
             img.contrast,
