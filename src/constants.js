@@ -8,7 +8,5 @@ export const PASSPORT_SIZES = {
 };
 
 export const SHEET_SIZES = {
-  PHOTO_4X6: { id: 'PHOTO_4X6', name: '4" x 6" Photo Paper', width: 101.6, height: 152.4, unit: 'in', displayWidth: 4, displayHeight: 6 },
-  A4: { id: 'A4', name: 'A4 Standard Paper', width: 210, height: 297, unit: 'mm', displayWidth: 210, displayHeight: 297 },
-  LETTER: { id: 'LETTER', name: 'Letter Paper', width: 215.9, height: 279.4, unit: 'in', displayWidth: 8.5, displayHeight: 11 },
+  PHOTO_4X6: { id: 'PHOTO_4X6', name: '4" x 6" Photo Paper', width: 101.6, height: 152.4, unit: 'in', displayWidth: 4, displayHeight: 6 }
 };
