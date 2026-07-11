@@ -68,6 +68,9 @@ body {
 
 /* Print CSS Styles */
 @media print {
+  @page {
+    margin: 0;
+  }
   body {
     background: white !important;
     background-image: none !important;
@@ -85,8 +88,8 @@ body {
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
-    width: 100vw !important;
-    height: 100vh !important;
+    width: 100% !important;
+    height: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     background: white !important;
