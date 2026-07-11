@@ -69,14 +69,18 @@ body {
 /* Print CSS Styles */
 @media print {
   @page {
+    size: 4in 6in portrait;
     margin: 0;
   }
-  body {
+  html, body {
     background: white !important;
     background-image: none !important;
     color: black !important;
     margin: 0 !important;
     padding: 0 !important;
+    width: 4in !important;
+    height: 6in !important;
+    overflow: hidden !important;
   }
   
   /* Hide standard web UI during print */
