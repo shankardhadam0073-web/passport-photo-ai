@@ -709,6 +709,24 @@ const StepPreview = memo(() => {
               >
                 Print Photo Directly
               </Button>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant="secondary"
+                  onClick={handleDownloadSessionPDF}
+                  icon={Download}
+                  className="w-full py-2"
+                >
+                  Save PDF (4x6)
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={handleDownloadPNG}
+                  icon={FileImage}
+                  className="w-full py-2"
+                >
+                  Save Image (4x6)
+                </Button>
+              </div>
             </div>
 
             {/* Go Back / Reset */}
