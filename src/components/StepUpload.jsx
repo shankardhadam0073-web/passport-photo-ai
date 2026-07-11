@@ -15,41 +15,12 @@ const StepUpload = () => {
 
   // Webcam states
   const webcamRef = useRef(null);
-  const [devices, setDevices] = useState([]);
-  const [selectedDeviceId, setSelectedDeviceId] = useState('');
+  const [facingMode, setFacingMode] = useState("environment");
   const [cameraError, setCameraError] = useState(null);
 
-  // Get available media devices (cameras)
-  const handleDevices = useCallback(
-    (mediaDevices) => {
-      const videoDevices = mediaDevices.filter(({ kind }) => kind === 'videoinput');
-      setDevices(videoDevices);
-      if (videoDevices.length > 0 && !selectedDeviceId) {
-        setSelectedDeviceId(videoDevices[0].deviceId);
-      }
-    },
-    [selectedDeviceId]
-  );
-
-  useEffect(() => {
-    if (activeTab === 'camera') {
-      navigator.mediaDevices
-        .enumerateDevices()
-        .then(handleDevices)
-        .catch((err) => {
-          console.error('Error enumerating devices: ', err);
-          setCameraError('Permission denied or no camera found.');
-        });
-    }
-  }, [activeTab, handleDevices]);
-
-  // Switch camera function
-  const cycleCamera = () => {
-    if (devices.length < 2) return;
-    const currentIndex = devices.findIndex((d) => d.deviceId === selectedDeviceId);
-    const nextIndex = (currentIndex + 1) % devices.length;
-    setSelectedDeviceId(devices[nextIndex].deviceId);
-  };
+  const toggleCamera = useCallback(() => {
+    setFacingMode((prev) => (prev === "environment" ? "user" : "environment"));
+  }, []);
 
   const capturePhoto = useCallback(async () => {
     if (webcamRef.current && images.length < 2) {
@@ -304,12 +275,11 @@ const StepUpload = () => {
                         ref={webcamRef}
                         screenshotFormat="image/jpeg"
                         videoConstraints={{
-                          deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
                           width: 1200,
                           height: 1600,
-                          facingMode: 'user',
+                          facingMode,
                         }}
-                        className="w-full h-full object-cover scale-x-[-1]"
+                        className={`w-full h-full object-cover ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
                         onUserMediaError={() => setCameraError(true)}
                       />
 
@@ -325,11 +295,9 @@ const StepUpload = () => {
 
                     {/* Webcam Controls */}
                     <div className="flex items-center gap-3 mt-4">
-                      {devices.length > 1 && (
-                        <Button variant="secondary" onClick={cycleCamera} icon={SwitchCamera} className="px-3.5 py-1.5 text-xs">
-                          Flip
-                        </Button>
-                      )}
+                      <Button variant="secondary" onClick={toggleCamera} icon={SwitchCamera} className="px-3.5 py-1.5 text-xs">
+                        Switch
+                      </Button>
                       <Button variant="primary" onClick={capturePhoto} icon={Camera} className="px-5 py-2 text-sm font-semibold">
                         Capture Photo #{images.length + 1}
                       </Button>
