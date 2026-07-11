@@ -612,10 +612,10 @@ const StepPreview = memo(() => {
       {/* Tabs removed as per requirement */}
 
       {/* Main Grid container */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start print:hidden">
         
         {/* Left Side: Interactive Preview Canvas */}
-        <div className="lg:col-span-7 flex flex-col items-center gap-6 print:block print:w-full">
+        <div className="lg:col-span-7 flex flex-col items-center gap-6">
           <h3 className="text-lg font-bold font-display text-white self-start no-print">
             Print Sheet Preview ({activeIdx === 'combined' ? 'All Photos Combined' : `Photo #${activeIdx + 1}`})
           </h3>
