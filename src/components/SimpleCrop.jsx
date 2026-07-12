@@ -200,21 +200,30 @@ const SimpleCrop = ({ photos, onBack, onPrintTrigger }) => {
 
   return (
     <div className="w-full max-w-5xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <Button variant="ghost" onClick={onBack} icon={ArrowLeft} className="text-slate-500">
-          Back
-        </Button>
-        <h2 className="text-2xl font-bold text-slate-900">Crop Photos (35x45mm ratio)</h2>
-        <div className="flex gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" onClick={onBack} icon={ArrowLeft} className="text-slate-500 px-2 md:px-5">
+            Back
+          </Button>
+          <h2 className="text-xl md:text-2xl font-bold text-slate-900">Crop Photos (35x45mm)</h2>
+        </div>
+        <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3">
           <Button 
             variant="secondary" 
             onClick={handleDownloadPDF} 
             icon={isExporting ? Loader2 : Download} 
             disabled={isExporting || isProcessing1 || isProcessing2}
+            className="w-full sm:w-auto py-3 md:py-2.5"
           >
             {isExporting ? 'Generating...' : 'Download PDF'}
           </Button>
-          <Button variant="primary" onClick={handlePrint} icon={Printer} disabled={isProcessing1 || isProcessing2}>
+          <Button 
+            variant="success" 
+            onClick={handlePrint} 
+            icon={Printer} 
+            disabled={isProcessing1 || isProcessing2}
+            className="w-full sm:w-auto py-4 md:py-3 text-lg font-bold shadow-lg shadow-emerald-600/30 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-600/40 hover:scale-105 transition-all duration-300"
+          >
             Direct Print
           </Button>
         </div>

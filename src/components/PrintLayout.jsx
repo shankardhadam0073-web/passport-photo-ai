@@ -9,8 +9,9 @@ const PrintLayout = ({ croppedPhotos }) => {
   ];
 
   return (
-    <div 
-      className="print-container bg-white"
+    <div className="w-full flex items-center justify-center p-8 bg-slate-50/50 print:p-0 print:bg-transparent min-h-screen print:min-h-0">
+      <div 
+        className="print-container bg-white shadow-2xl shadow-slate-900/10 rounded-xl print:shadow-none print:rounded-none"
       style={{
         width: '4in',
         height: '6in',
@@ -49,6 +50,7 @@ const PrintLayout = ({ croppedPhotos }) => {
           />
         </div>
       ))}
+      </div>
     </div>
   );
 };

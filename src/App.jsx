@@ -41,7 +41,7 @@ function App() {
 
       {/* Main Content */}
       <main className="flex-grow flex flex-col items-center justify-start no-print">
-        {step === 1 && (
+        {step === 1 && !croppedPhotos[0] && (
           <SimpleUpload 
             photos={photos} 
             setPhotos={setPhotos} 
@@ -49,7 +49,7 @@ function App() {
           />
         )}
         
-        {step === 2 && (
+        {step === 2 && !croppedPhotos[0] && (
           <SimpleCrop 
             photos={photos} 
             onBack={() => setStep(1)}
@@ -58,9 +58,24 @@ function App() {
         )}
       </main>
       
-      {/* Hidden print layer */}
+      {/* Visible Print Preview on screen after generating */}
+      {croppedPhotos[0] && (
+        <div className="flex-grow flex flex-col items-center justify-start relative">
+          <button 
+            onClick={() => setCroppedPhotos([null, null])}
+            className="absolute top-8 left-8 px-4 py-2 bg-white text-slate-700 font-medium rounded-lg shadow-sm hover:bg-slate-50 transition-colors border border-slate-200 no-print z-10"
+          >
+            ← Back to Editing
+          </button>
+          <div className="w-full">
+            <PrintLayout croppedPhotos={croppedPhotos} />
+          </div>
+        </div>
+      )}
+
+      {/* Hidden print layer for actual printing (if not already handled by PrintLayout) */}
       <div className="hidden print:block">
-        <PrintLayout croppedPhotos={croppedPhotos} />
+        {!croppedPhotos[0] && <PrintLayout croppedPhotos={croppedPhotos} />}
       </div>
     </div>
   );
