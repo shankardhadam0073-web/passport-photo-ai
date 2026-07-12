@@ -77,6 +77,11 @@ function App() {
       <div className="hidden print:block">
         {!croppedPhotos[0] && <PrintLayout croppedPhotos={croppedPhotos} />}
       </div>
+
+      {/* Footer */}
+      <footer className="w-full bg-white border-t border-[#E5E7EB] p-[16px] text-center text-[14px] text-[#6B7280] no-print mt-auto">
+        Developed by Shankar Dhadam
+      </footer>
     </div>
   );
 }

@@ -47,7 +47,10 @@ const SimpleCrop = ({ photos, onBack, onPrintTrigger }) => {
 
     try {
       const imageSrc = photos[index];
-      const blob = await removeBackground(imageSrc);
+      const config = {
+        publicPath: "https://unpkg.com/@imgly/background-removal@1.7.0/dist/"
+      };
+      const blob = await removeBackground(imageSrc, config);
       
       const img = new Image();
       img.src = URL.createObjectURL(blob);
@@ -58,7 +61,7 @@ const SimpleCrop = ({ photos, onBack, onPrintTrigger }) => {
       canvas.height = img.height;
       const ctx = canvas.getContext('2d');
       
-      ctx.fillStyle = bgColor === 'white' ? '#FFFFFF' : '#1D4ED8';
+      ctx.fillStyle = bgColor === 'white' ? '#FFFFFF' : '#60A5FA';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0);
       
