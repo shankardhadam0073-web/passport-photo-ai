@@ -72,6 +72,7 @@ body {
     size: 4in 6in portrait;
     margin: 0;
   }
+  
   html, body {
     background: white !important;
     background-image: none !important;
@@ -88,24 +89,13 @@ body {
     display: none !important;
   }
   
-  .print-area {
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    width: 100% !important;
-    height: 100% !important;
+  .print-container {
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 0.1in !important;
     background: white !important;
     box-shadow: none !important;
     border: none !important;
+    width: 4in !important;
+    height: 6in !important;
   }
-}
-
-.safe-export, .safe-export * { 
-  border-color: transparent; 
-  box-shadow: none; 
-  text-shadow: none; 
-  outline-color: transparent; 
-  text-decoration-color: transparent; 
 }
