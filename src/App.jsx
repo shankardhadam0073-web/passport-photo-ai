@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import SimpleUpload from './components/SimpleUpload';
 import SimpleCrop from './components/SimpleCrop';
-import SimplePrint from './components/SimplePrint';
+import PrintLayout from './components/PrintLayout';
 import { Sparkles } from 'lucide-react';
 
 function App() {
@@ -9,10 +9,12 @@ function App() {
   const [photos, setPhotos] = useState([null, null]);
   const [croppedPhotos, setCroppedPhotos] = useState([null, null]);
 
-  const handleReset = () => {
-    setPhotos([null, null]);
-    setCroppedPhotos([null, null]);
-    setStep(1);
+  const handlePrintTrigger = (cropped) => {
+    setCroppedPhotos(cropped);
+    // Give React a moment to render the PrintLayout to the DOM
+    setTimeout(() => {
+      window.print();
+    }, 150);
   };
 
   return (
@@ -30,7 +32,7 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow flex flex-col items-center justify-start">
+      <main className="flex-grow flex flex-col items-center justify-start no-print">
         {step === 1 && (
           <SimpleUpload 
             photos={photos} 
@@ -42,20 +44,16 @@ function App() {
         {step === 2 && (
           <SimpleCrop 
             photos={photos} 
-            setCroppedPhotos={setCroppedPhotos}
             onBack={() => setStep(1)}
-            onNext={() => setStep(3)}
-          />
-        )}
-
-        {step === 3 && (
-          <SimplePrint 
-            croppedPhotos={croppedPhotos}
-            onBack={() => setStep(2)}
-            onReset={handleReset}
+            onPrintTrigger={handlePrintTrigger}
           />
         )}
       </main>
+      
+      {/* Hidden print layer */}
+      <div className="hidden print:block">
+        <PrintLayout croppedPhotos={croppedPhotos} />
+      </div>
     </div>
   );
 }
