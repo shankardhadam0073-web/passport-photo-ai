@@ -11,7 +11,7 @@ try {
 const sharp = require('sharp');
 
 async function processIcons() {
-  const input = 'C:\\Users\\Shree\\.gemini\\antigravity-ide\\brain\\3d913064-6c10-48a8-8564-340e6bfc1493\\passport_printer_icon_1783918822597.png';
+  const input = 'C:\\Users\\Shree\\.gemini\\antigravity-ide\\brain\\3d913064-6c10-48a8-8564-340e6bfc1493\\media__1783919829011.jpg';
   const pubDir = 'c:\\AI-Passport-Photo-Copies-Generator\\public';
   
   if (!fs.existsSync(pubDir)) {
