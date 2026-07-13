@@ -13,20 +13,22 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['**/*.{png,svg,jpg,jpeg,ico,txt,woff2}'],
       manifest: {
-        name: 'AI Passport Photo Copies Generator',
-        short_name: 'Passport AI',
-        description: 'Create perfect passport photos with automatic AI face detection and cropping.',
-        theme_color: '#020617',
-        background_color: '#020617',
+        name: 'AI Passport Photo Printer',
+        short_name: 'Passport Printer',
+        description: 'Professional Passport Photo Printing Tool',
+        theme_color: '#2563EB',
+        background_color: '#FFFFFF',
         display: 'standalone',
+        orientation: 'portrait',
+        start_url: '/',
         icons: [
           {
-            src: '/pwa-192x192.png',
+            src: '/icon-192.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: '/pwa-512x512.png',
+            src: '/icon-512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
