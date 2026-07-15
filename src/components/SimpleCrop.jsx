@@ -61,8 +61,24 @@ const SimpleCrop = ({ photos, onBack, onPrintTrigger }) => {
       canvas.height = img.height;
       const ctx = canvas.getContext('2d');
       
-      ctx.fillStyle = bgColor === 'white' ? '#FFFFFF' : '#60A5FA';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      if (bgColor === 'white') {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else if (bgColor === 'blue') {
+        try {
+          const bgImg = new Image();
+          bgImg.src = '/passport_blue_bg.png';
+          await new Promise((resolve, reject) => {
+            bgImg.onload = resolve;
+            bgImg.onerror = reject;
+          });
+          ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+        } catch (err) {
+          console.error("Failed to load custom blue background, falling back to solid color:", err);
+          ctx.fillStyle = '#60A5FA';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+      }
       ctx.drawImage(img, 0, 0);
       
       const newUrl = await new Promise((resolve) => {
