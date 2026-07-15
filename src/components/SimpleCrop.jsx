@@ -47,7 +47,10 @@ const SimpleCrop = ({ photos, onBack, onPrintTrigger }) => {
 
     try {
       const imageSrc = photos[index];
-      const blob = await removeBackground(imageSrc);
+      const config = {
+        model: "small"
+      };
+      const blob = await removeBackground(imageSrc, config);
       
       const img = new Image();
       img.src = URL.createObjectURL(blob);
