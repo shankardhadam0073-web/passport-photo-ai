@@ -47,10 +47,7 @@ const SimpleCrop = ({ photos, onBack, onPrintTrigger }) => {
 
     try {
       const imageSrc = photos[index];
-      const config = {
-        publicPath: "https://unpkg.com/@imgly/background-removal@1.7.0/dist/"
-      };
-      const blob = await removeBackground(imageSrc, config);
+      const blob = await removeBackground(imageSrc);
       
       const img = new Image();
       img.src = URL.createObjectURL(blob);
