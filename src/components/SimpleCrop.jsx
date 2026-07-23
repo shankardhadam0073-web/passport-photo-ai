@@ -56,7 +56,7 @@ const SimpleCrop = ({ photos, onBack, onPrintTrigger }) => {
         const imageSrc = photos[index];
         const config = {
           model: "small",
-          publicPath: "https://static.imgly.com/@imgly/background-removal-data/1.7.0/dist/"
+          publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal-data@1.7.0/dist/"
         };
         const blob = await removeBackground(imageSrc, config);
         transparentUrl = URL.createObjectURL(blob);
