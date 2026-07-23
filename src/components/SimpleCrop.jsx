@@ -23,6 +23,10 @@ const SimpleCrop = ({ photos, onBack, onPrintTrigger }) => {
 
   const [isExporting, setIsExporting] = useState(false);
 
+  // Cache for transparent images so we don't re-run the AI model
+  const [transparentImg1, setTransparentImg1] = useState(null);
+  const [transparentImg2, setTransparentImg2] = useState(null);
+
   // Background Processing logic
   const handleBgChange = async (index, bgColor) => {
     if (index === 0) {
@@ -46,14 +50,23 @@ const SimpleCrop = ({ photos, onBack, onPrintTrigger }) => {
     }
 
     try {
-      const imageSrc = photos[index];
-      const config = {
-        model: "small"
-      };
-      const blob = await removeBackground(imageSrc, config);
+      let transparentUrl = index === 0 ? transparentImg1 : transparentImg2;
+
+      if (!transparentUrl) {
+        const imageSrc = photos[index];
+        const config = {
+          model: "small",
+          publicPath: "https://static.imgly.com/@imgly/background-removal-data/1.7.0/dist/"
+        };
+        const blob = await removeBackground(imageSrc, config);
+        transparentUrl = URL.createObjectURL(blob);
+        
+        if (index === 0) setTransparentImg1(transparentUrl);
+        else setTransparentImg2(transparentUrl);
+      }
       
       const img = new Image();
-      img.src = URL.createObjectURL(blob);
+      img.src = transparentUrl;
       await new Promise(r => img.onload = r);
       
       const canvas = document.createElement('canvas');
